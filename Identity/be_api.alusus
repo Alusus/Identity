@@ -1,0 +1,35 @@
+@merge module Identity {
+    def providers: Array[SrdRef[Provider]];
+
+    function findProvider(name: String): SrdRef[Provider] {
+        def i: Int;
+        for i = 0, i < providers.getLength(), ++i {
+            if providers(i).name == name return providers(i);
+        }
+        return SrdRef[Provider]();
+    }
+
+    function authenticate(providerName: String, code: String, redirectUri: String): Possible[AuthenticationResponse] {
+        def provider: SrdRef[Provider] = findProvider(providerName);
+        if provider.isNull() return Possible[AuthenticationResponse].failure(
+            SrdRef[GenericError].construct().{ code = 1; message = "Invalid provider" }
+        );
+        return provider.authenticate(code, redirectUri);
+    }
+
+    function reauthenticate(providerName: String, refreshToken: String): Possible[AuthenticationResponse] {
+        def provider: SrdRef[Provider] = findProvider(providerName);
+        if provider.isNull() return Possible[AuthenticationResponse].failure(
+            SrdRef[GenericError].construct().{ code = 1; message = "Invalid provider" }
+        );
+        return provider.reauthenticate(refreshToken);
+    }
+
+    function getUserInfo(providerName: String, accessToken: String): Possible[UserInfoResponse] {
+        def provider: SrdRef[Provider] = findProvider(providerName);
+        if provider.isNull() return Possible[UserInfoResponse].failure(
+            SrdRef[GenericError].construct().{ code = 1; message = "Invalid provider" }
+        );
+        return provider.getUserInfo(accessToken);
+    }
+}

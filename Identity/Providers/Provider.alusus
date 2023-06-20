@@ -1,0 +1,11 @@
+@merge module Identity {
+    class Provider {
+        handler this.name: String as_ptr;
+
+        handler this.authenticate(code: String, redirectUri: String): Possible[AuthenticationResponse] as_ptr;
+
+        handler this.reauthenticate(refreshToken: String): Possible[AuthenticationResponse] as_ptr;
+
+        handler this.getUserInfo(accessToken: String): Possible[UserInfoResponse] as_ptr;
+    }
+}

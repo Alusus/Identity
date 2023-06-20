@@ -1,0 +1,5 @@
+@merge module Identity {
+    function escapeJsonValue(val: String): String {
+        return val.replace("\\"، "\\\\").replace("\n"، "\\n").replace("\""، "\\\"")؛
+    }
+}

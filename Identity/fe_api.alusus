@@ -1,0 +1,121 @@
+@merge module Identity {
+    def STORAGE_PROVIDER_NAME_KEY: "identity.providerName";
+    def STORAGE_ACCESS_TOKEN_KEY: "identity.accessToken";
+    def STORAGE_ACCESS_TOKEN_EXPIRY_IN_SECONDS_KEY: "identity.accessTokenExpiryInSeconds";
+    def STORAGE_REFRESH_TOKEN_KEY: "identity.refreshToken";
+    def STORAGE_USER_FULL_NAME_KEY: "identity.fullName";
+
+    function getAccessToken(): String {
+        return Window.instance.localStorage.getItem(STORAGE_ACCESS_TOKEN_KEY);
+    }
+
+    function checkAuthenticationStatus(): SrdRef[Promise[Bool]] {
+        def accessToken: String = Window.instance.localStorage.getItem(STORAGE_ACCESS_TOKEN_KEY);
+        logToConsole(String.format("accessToken = %s", accessToken.buf));
+        if accessToken == "" {
+            return Promise[Bool].new().{ resolve(false) };
+        }
+
+        def expiryStr: String = Window.instance.localStorage.getItem(STORAGE_ACCESS_TOKEN_EXPIRY_IN_SECONDS_KEY);
+        if expiryStr == "" or String.parseInt(expiryStr) * 1000 > getTimestamp() {
+            logToConsole("accessToken not expired. Validating...");
+            return sendRequest(
+                "POST",
+                "/api/identity/validate",
+                "Content-Type: application/json",
+                String.format("{ \"accessToken\": \"%s\" }", escapeJsonValue(accessToken).buf),
+                10000
+            ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
+                logToConsole(String.format("validation complete: %s", res.getObject("eventData").getInt("status")));
+                if res.getObject("eventData").getInt("status") == 200 p.resolve(true)
+                else p.resolve(obtainNewAccessToken());
+            });
+        }
+
+        return obtainNewAccessToken();
+    }
+
+    function finalizeAuthentication(redirectUri: CharsPtr): SrdRef[Promise[Bool]] {
+        def code: String = Window.instance.getQueryParam("code");
+        if code == "" {
+            logToConsole("code is empty!");
+            return Promise[Bool].new().{ resolve(false) };
+        }
+        logToConsole(String("code = ") + code);
+        // TODO: Determine correct provider name. For now we're only supporting Google, so we can
+        //       can hardcode it until other providers are supported.
+        def providerName: String("google");
+        return sendRequest(
+            "POST",
+            "/api/identity/authenticate",
+            "Content-Type: application/json",
+            String.format(
+                "{ \"providerName\": \"%s\", \"code\": \"%s\", \"redirectUri\": \"%s\" }",
+                escapeJsonValue(providerName).buf,
+                escapeJsonValue(code).buf,
+                redirectUri
+            ),
+            10000
+        ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
+            if res.getObject("eventData").getInt("status") == 200 {
+                def body: Json = res.getObject("eventData").getString("body");
+                logToConsole(body.jsonString);
+                saveAuthenticationData(body);
+                p.resolve(true);
+            } else {
+                clearAuthenticationData();
+                p.resolve(false);
+            }
+        });
+    }
+
+    function obtainNewAccessToken(): SrdRef[Promise[Bool]] {
+        logToConsole("Refreshing access token");
+        def providerName: String = Window.instance.localStorage.getItem(STORAGE_PROVIDER_NAME_KEY);
+        def refreshToken: String = Window.instance.localStorage.getItem(STORAGE_REFRESH_TOKEN_KEY);
+        if providerName == "" or refreshToken == "" {
+            clearAuthenticationData();
+            return Promise[Bool].new().{ resolve(false) };
+        }
+        return sendRequest(
+            "POST",
+            "/api/identity/reauthenticate",
+            "Content-Type: application/json",
+            String.format(
+                "{ \"providerName\": \"%s\", \"refreshToken\": \"%s\" }",
+                escapeJsonValue(providerName).buf,
+                escapeJsonValue(refreshToken).buf
+            ),
+            10000
+        ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
+            if res.getObject("eventData").getInt("status") == 200 {
+                def body: Json = res.getObject("eventData").getString("body");
+                saveAuthenticationData(body);
+                p.resolve(true);
+            } else {
+                clearAuthenticationData();
+                p.resolve(false);
+            }
+        });
+    }
+
+    function saveAuthenticationData(json: Json) {
+        Window.instance.localStorage.{
+            setItem(STORAGE_PROVIDER_NAME_KEY, json.getString("providerName"));
+            setItem(STORAGE_ACCESS_TOKEN_KEY, json.getString("accessToken"));
+            setItem(STORAGE_ACCESS_TOKEN_EXPIRY_IN_SECONDS_KEY, String() + json.getInt("accessTokenExpiry"));
+            setItem(STORAGE_REFRESH_TOKEN_KEY, json.getString("refreshToken"));
+            setItem(STORAGE_USER_FULL_NAME_KEY, json.getString("fullName"));
+        };
+    }
+
+    function clearAuthenticationData() {
+        Window.instance.localStorage.{
+            removeItem(STORAGE_PROVIDER_NAME_KEY);
+            removeItem(STORAGE_ACCESS_TOKEN_KEY);
+            removeItem(STORAGE_ACCESS_TOKEN_EXPIRY_IN_SECONDS_KEY);
+            removeItem(STORAGE_REFRESH_TOKEN_KEY);
+            removeItem(STORAGE_USER_FULL_NAME_KEY);
+        };
+    }
+}

@@ -1,0 +1,31 @@
+import "Srl/Console";
+import "Srl/Time";
+import "Srl/Possible";
+import "Srl/Net";
+import "Srl/errors";
+import "Apm";
+Apm.importFile("Alusus/Crypto");
+Apm.importFile("Alusus/Json");
+Apm.importFile("Alusus/Promises");
+
+import "Identity/errors";
+import "Identity/Providers/Provider";
+import "Identity/Providers/GoogleProvider";
+import "Identity/net_helpers";
+import "Identity/json_helpers";
+import "Identity/dtos";
+import "Identity/be_api";
+
+import "Identity/GoogleAuthenticateButton";
+import "Identity/rest_api";
+import "Identity/fe_api";
+
+@merge module Identity {
+    use Srl;
+    use WebPlatform;
+    use Promises;
+
+    function addProvider(provider: SrdRef[Provider]) {
+        providers.add(provider);
+    }
+}

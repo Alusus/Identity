@@ -1,0 +1,87 @@
+@merge module Identity {
+    class TokenInfo {
+        def accessToken: String;
+        def accessTokenExpiry: Int[64] = 0;
+        def refreshToken: String;
+
+        handler this~init() {
+        }
+
+        handler this~init(at: String, ate: Int[64], rt: String) {
+            this.accessToken = at;
+            this.accessTokenExpiry = ate;
+            this.refreshToken = rt;
+        }
+
+        handler this~init(ref[this_type]) {
+            this = value;
+        }
+
+        handler this = ref[this_type] {
+            this.accessToken = value.accessToken;
+            this.accessTokenExpiry = value.accessTokenExpiry;
+            this.refreshToken = value.refreshToken;
+        }
+    }
+
+    class UserInfo {
+        def id: String;
+        def name: String;
+        def email: String;
+
+        handler this~init() {
+        }
+
+        handler this~init(id: String, name: String, email: String) {
+            this.id = id;
+            this.name = name;
+            this.email = email;
+        }
+
+        handler this~init(ref[this_type]) {
+            this = value;
+        }
+
+        handler this = ref[this_type] {
+            this.id = value.id;
+            this.name = value.name;
+            this.email = value.email;
+        }
+    }
+
+    class AuthenticationResponse {
+        def providerName: String;
+        @injection def tokenInfo: TokenInfo;
+        @injection def userInfo: UserInfo;
+
+        handler this~init() {
+        }
+
+        handler this~init(ref[this_type]) {
+            this = value;
+        }
+
+        handler this = ref[this_type] {
+            this.providerName = value.providerName;
+            this.tokenInfo = value.tokenInfo;
+            this.userInfo = value.userInfo;
+        }
+    }
+
+    class UserInfoResponse {
+        def providerName: String;
+        @injection def userInfo: UserInfo;
+
+        handler this~init() {
+        }
+
+        handler this~init(ref[this_type]) {
+            this = value;
+        }
+
+        handler this = ref[this_type] {
+            this.providerName = value.providerName;
+            this.userInfo = value.userInfo;
+        }
+    }
+}

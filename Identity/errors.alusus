@@ -1,0 +1,31 @@
+@merge module Identity {
+    def ErrorCodes: {
+        def HTTP_ERROR: 1;
+    };
+
+    class HttpError {
+        @injection def error: Error;
+        def url: String;
+        def method: String;
+        def status: Int;
+
+        handler (this: Error).getCode(): Int set_ptr {
+            return ErrorCodes.HTTP_ERROR;
+        }
+        handler (this: Error).getMessage(): String set_ptr {
+            return String.format(
+                "HTTP request failed. Status Code: %d. Target: %s %s",
+                this.status,
+                this.method.buf,
+                this.url.buf
+            );
+        }
+        function new(m: String, u: String, s: Int): SrdRef[HttpError] {
+            return SrdRef[HttpError].construct().{
+                method = m;
+                url = u;
+                status = s;
+            };
+        }
+    }
+}

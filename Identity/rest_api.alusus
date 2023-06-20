@@ -1,0 +1,120 @@
+@merge module Identity {
+    def privateKey: ref[Crypto.EvpPkey];
+    def onLogin: closure (respones: AuthenticationResponse): String;
+
+    function setupRestApi(pkeyFilename: CharsPtr, loginCallback: closure(AuthenticationResponse): String) {
+        preprocess {
+            registerEndpointsModule[Identity];
+        }
+        privateKey~no_deref = Crypto.EvpPkey.readPem(pkeyFilename);
+        onLogin = loginCallback;
+    }
+
+    macro validateSetup [conn] {
+        if onLogin.isNull() {
+            Console.print("%sError: onLogin is not setup%s\n", Console.Style.FG_RED, Console.Style.FG_WHITE);
+            Http.print(conn, "HTTP/1.1 500 Internal Server Error\r\n");
+        }
+    }
+
+    @beEndpoint["POST", "/api/identity/authenticate"]
+    function authenticateByRest(conn: ptr[Http.Connection]) {
+        validateSetup[conn];
+        def postData: array[Char, 2048];
+        def postDataSize: Int = Http.read(conn, postData~ptr, postData~size);
+        def json: Json(String(postData~ptr, postDataSize));
+        handleAuthenticationResponse(
+            conn, authenticate(json.getString("providerName"), json.getString("code"), json.getString("redirectUri"))
+        );
+    }
+
+    @beEndpoint["POST", "/api/identity/reauthenticate"]
+    function reauthenticateByRest(conn: ptr[Http.Connection]) {
+        validateSetup[conn];
+        def postData: array[Char, 2048];
+        def postDataSize: Int = Http.read(conn, postData~ptr, postData~size);
+        def json: Json(String(postData~ptr, postDataSize));
+        handleAuthenticationResponse(
+            conn, reauthenticate(json.getString("providerName"), json.getString("refreshToken"))
+        );
+    }
+
+    @beEndpoint["POST", "/api/identity/validate"]
+    function validateByRest(conn: ptr[Http.Connection]) {
+        validateSetup[conn];
+        def postData: array[Char, 2048];
+        def postDataSize: Int = Http.read(conn, postData~ptr, postData~size);
+        def json: Json(String(postData~ptr, postDataSize));
+        def providerName: String;
+        def extAccessToken: String;
+        def userId: String;
+        if not validateAccessToken(json.getString("accessToken"), providerName, extAccessToken, userId) {
+            Http.print(conn, "HTTP/1.1 401 Unauthorized\r\n\r\n");
+        }
+        def userInfo: Possible[UserInfoResponse] = getUserInfo(providerName, extAccessToken);
+        if not userInfo {
+            Http.print(conn, "HTTP/1.1 401 Unauthorized\r\n\r\n");
+        }
+        Http.print(conn, "HTTP/1.1 200 Success\r\n\r\n");
+    }
+
+    function handleAuthenticationResponse(conn: ptr[Http.Connection], result: Possible[AuthenticationResponse]) {
+        if result {
+            def userId: String = onLogin(result);
+            def accessToken: String = generateAccessToken(
+                result.providerName, result.accessToken, result.accessTokenExpiry, userId
+            );
+            def response: String = String.format(
+                "{"
+                    "\"providerName\": \"%s\","
+                    "\"accessToken\": \"%s\","
+                    "\"accessTokenExpiry\": %l,"
+                    "\"refreshToken\": \"%s\","
+                    "\"fullName\": \"%s\""
+                "}",
+                escapeJsonValue(result.providerName).buf,
+                escapeJsonValue(accessToken).buf,
+                result.accessTokenExpiry,
+                escapeJsonValue(result.refreshToken).buf,
+                escapeJsonValue(result.name).buf
+            );
+            Http.print(conn, "HTTP/1.1 200 Ok\r\n");
+            Http.print(conn, "Cache-Control: no-cache\r\n");
+            Http.print(conn, "Content-Type: application/json\r\n");
+            Http.print(conn, "Content-Length: %d\r\n\r\n", response.getLength());
+            Http.print(conn, response.buf);
+        } else {
+            Console.print(
+                "%sAuthentication failed: %s%s\n",
+                Console.Style.FG_RED,
+                result.error.getMessage().buf,
+                Console.Style.FG_WHITE
+            );
+            Http.print(conn, "HTTP/1.1 401 Unauthorized\r\n\r\n");
+        }
+    }
+
+    function generateAccessToken(
+        providerName: String, extAccessToken: String, expiry: Int[64], userId: String
+    ): String {
+        def payload: String = providerName + "::" + extAccessToken + "::" + expiry + "::" + userId;
+        def signature: String = Crypto.sign(payload, privateKey, Crypto.EvpMd.sha256());
+        return payload + ":::" + signature;
+    }
+
+    function validateAccessToken(
+        token: String, providerName: ref[String], extAccessToken: ref[String], userId: ref[String]
+    ): Bool {
+        def fragments: Array[String] = token.split(":::");
+        if fragments(0) == "" or fragments(1) == "" return false;
+        def signature: String = Crypto.sign(fragments(0), privateKey, Crypto.EvpMd.sha256());
+        if signature != fragments(1) return false;
+        fragments = fragments(0).split("::");
+        def expiry: Int[64] = String.parseInt(fragments(2));
+        if Time.getTimestamp(0) >= expiry return false;
+        providerName = fragments(0);
+        extAccessToken = fragments(1);
+        userId = fragments(3);
+        return true;
+    }
+}

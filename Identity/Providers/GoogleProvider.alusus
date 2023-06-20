@@ -1,0 +1,129 @@
+@merge module Identity {
+    class GoogleProvider {
+        @injection def provider: Provider;
+
+        // CONSTANTS
+
+        def TOKEN_URL: "https://www.googleapis.com/oauth2/v3/token";
+        def USER_INFO_URL: "https://www.googleapis.com/oauth2/v3/userinfo";
+
+        // MEMBER VARIABLES
+
+        def clientId: String;
+        def clientSecret: String;
+
+        // CONSTRUCTORS
+
+        handler this~init(clientId: String, clientSecret: String) {
+            this.clientId = clientId;
+            this.clientSecret = clientSecret;
+        }
+
+        handler this_type(cId: String, cSecret: String): SrdRef[GoogleProvider] {
+            return SrdRef[GoogleProvider]().{ alloc()~init(cId, cSecret) };
+        }
+
+        // ABSTRACT METHODS
+
+        handler (this: Provider).name: String set_ptr {
+            @shared def name: String("google");
+            return name;
+        }
+
+        handler (this: Provider).authenticate(
+            code: String, redirectUri: String
+        ): Possible[AuthenticationResponse] set_ptr {
+            def tokenResult: Possible[TokenInfo] = validateCode(code, this.clientId, this.clientSecret, redirectUri);
+            if not tokenResult return Possible[AuthenticationResponse].failure(tokenResult.error);
+            def userResult: Possible[UserInfo] = fetchUserInfo(tokenResult.accessToken);
+            if not userResult return Possible[AuthenticationResponse].failure(userResult.error);
+            return Possible[AuthenticationResponse].success(
+                AuthenticationResponse()~use_in(self){
+                    providerName = this.name;
+                    tokenInfo = tokenResult;
+                    userInfo = userResult;
+                }
+            );
+        }
+
+        handler (this: Provider).reauthenticate(refreshToken: String): Possible[AuthenticationResponse] set_ptr {
+            def tokenResult: Possible[TokenInfo] = obtainAccessToken(refreshToken, this.clientId, this.clientSecret);
+            if not tokenResult return Possible[AuthenticationResponse].failure(tokenResult.error);
+            def userResult: Possible[UserInfo] = fetchUserInfo(tokenResult.accessToken);
+            if not userResult return Possible[AuthenticationResponse].failure(userResult.error);
+            return Possible[AuthenticationResponse].success(
+                AuthenticationResponse()~use_in(self){
+                    providerName = this.name;
+                    tokenInfo = tokenResult;
+                    userInfo = userResult;
+                }
+            );
+        }
+
+        handler (this: Provider).getUserInfo(accessToken: String): Possible[UserInfoResponse] set_ptr {
+            def userResult: Possible[UserInfo] = fetchUserInfo(accessToken);
+            if not userResult return Possible[UserInfoResponse].failure(userResult.error);
+            return Possible[UserInfoResponse].success(
+                UserInfoResponse()~use_in(self){
+                    providerName = this.name;
+                    userInfo = userResult;
+                }
+            );
+        }
+
+        // REST WRAPPERS
+
+        func validateCode(code: String, clientId: String, clientSecret: String, redirectUri: String): Possible[TokenInfo] {
+            def form: String = String.format(
+                "code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code&access_type=offline",
+                code.buf, clientId.buf, clientSecret.buf, redirectUri.buf
+            );
+            def currentTimestamp: Int[64] = Time.getTimestamp(0);
+            def json: Json;
+            def err: SrdRef[Error] = makePostRequest(TOKEN_URL, form, json);
+            if err.isNull() {
+                return Possible[TokenInfo].success(TokenInfo(
+                    json.getString("access_token"),
+                    currentTimestamp + json.getInt("expires_in"),
+                    json.getString("refresh_token")
+                ));
+            } else {
+                return Possible[TokenInfo].failure(err);
+            }
+        }
+
+        func obtainAccessToken(refreshToken: String, clientId: String, clientSecret: String): Possible[TokenInfo] {
+            def form: String = String.format(
+                "client_id=%s&client_secret=%s&refresh_token=%s&grant_type=refresh_token",
+                clientId.buf, clientSecret.buf, refreshToken.buf
+            );
+            def currentTimestamp: Int[64] = Time.getTimestamp(0);
+            def json: Json;
+            def err: SrdRef[Error] = makePostRequest(TOKEN_URL, form, json);
+            if err.isNull() {
+                return Possible[TokenInfo].success(TokenInfo(
+                    json.getString("access_token"),
+                    currentTimestamp + json.getInt("expires_in"),
+                    json.getString("refresh_token")
+                ));
+            } else {
+                return Possible[TokenInfo].failure(err);
+            }
+        }
+
+        func fetchUserInfo(accessToken: String): Possible[UserInfo] {
+            def header: String = String.format("Authorization: Bearer %s", accessToken.buf);
+            def json: Json;
+            def err: SrdRef[Error] = makeGetRequest(USER_INFO_URL, header, json);
+            if err.isNull() {
+                return Possible[UserInfo].success(UserInfo(
+                    json.getString("sub"),
+                    json.getString("name"),
+                    json.getString("email")
+                ));
+            } else {
+                return Possible[UserInfo].failure(err);
+            }
+        }
+    }
+}

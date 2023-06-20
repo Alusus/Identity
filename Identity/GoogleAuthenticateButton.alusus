@@ -1,0 +1,33 @@
+@merge module Identity {
+    class GoogleAuthenticateButton {
+        @injection def component: Component;
+
+        def AUTH_URL: "https://accounts.google.com/o/oauth2/v2/auth";
+        def BUTTON_LIGHT_IMAGE_URL: "https://developers.google.com/static/identity/images/btn_google_signin_light_normal_web.png";
+        def BUTTON_DARK_IMAGE_URL: "https://developers.google.com/static/identity/images/btn_google_signin_dark_normal_web.png";
+
+        handler this~init(clientId: String, redirectUri: String, dark: Bool) {
+            this.view = Hyperlink().{
+                // TODO: Data drive scope.
+                // TODO: Add state.
+                url = String.format(
+                    "%s?client_id=%s&access_type=offline&&redirect_uri=%s&response_type=code&scope=openid+email+profile",
+                    AUTH_URL, clientId.buf, redirectUri.buf
+                );
+                logToConsole(url);
+                setChild(Image().{
+                    if dark url = String(BUTTON_DARK_IMAGE_URL)
+                    else url = String(BUTTON_LIGHT_IMAGE_URL);
+                });
+            };
+        }
+
+        handler this.style: SrdRef[StyleSet] {
+            return this.view.style;
+        }
+
+        handler this_type(clientId: String, redirectUri: String, dark: Bool): SrdRef[GoogleAuthenticateButton] {
+            return SrdRef[GoogleAuthenticateButton]().{ alloc()~init(clientId, redirectUri, dark) };
+        }
+    }
+}
