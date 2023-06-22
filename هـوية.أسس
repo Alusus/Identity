@@ -43,8 +43,10 @@
     // الأخطاء
 
     عرف رمـوز_الأخطاء: {
-        _خطأ_بننف_: لقب ErrorCodes.HTTP_ERROR؛
-    }؛
+        عرف _خطأ_بننف_: لقب ErrorCodes.HTTP_ERROR؛
+        عرف _اسم_مزود_خاطئ_: لقب ErrorCodes.INVALID_PROVIDER؛
+        عرف _معطى_خاطئ_: لقب ErrorCodes.INVALID_PARAM؛
+    }
 
     عرف خـطأ_بننف: لقب HttpError؛
     @دمج صنف خـطأ_بننف {
