@@ -1,76 +1,81 @@
 @merge module Identity {
     func makePostRequest(url: CharsPtr, formData: CharsPtr, result: ref[Json]): SrdRef[Error] {
-        def curlHandle: ptr[Srl.Net.Curl] = Srl.Net.CurlEasy.init();
+        def curlHandle: ptr[Net.Curl] = Net.CurlEasy.init();
         if curlHandle == 0 {
             System.fail(1, "Curl initialization failed!\n");
         }
 
-        def content: Srl.Net.ResponseContent;
+        def content: Net.ResponseContent;
         content.data = 0;
         content.size = 0;
 
-        def headers: ptr[Srl.Net.CurlSlist] = 0;
-        headers = Srl.Net.CurlSlist.append(headers, "Content-Type: application/x-www-form-urlencoded");
+        def headers: ptr[Net.CurlSlist] = 0;
+        headers = Net.CurlSlist.append(headers, "Content-Type: application/x-www-form-urlencoded");
 
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.URL, url);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.POST, 1i64);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.POSTFIELDS, formData);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.POSTFIELDSIZE, String.getLength(formData));
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.HTTPHEADER, headers);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.SSL_VERIFYPEER, 0i64);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.FOLLOWLOCATION, 1i64);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.WRITEDATA, content~ptr);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.WRITEFUNCTION, Srl.Net.responseCallback~ptr);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.URL, url);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.POST, 1i64);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.POSTFIELDS, formData);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.POSTFIELDSIZE, String.getLength(formData));
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.HTTPHEADER, headers);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.SSL_VERIFYPEER, 0i64);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.FOLLOWLOCATION, 1i64);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.WRITEDATA, content~ptr);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.WRITEFUNCTION, Net.responseCallback~ptr);
 
-        def resultCode: Int = Srl.Net.CurlEasy.perform(curlHandle);
-        Srl.Net.CurlEasy.cleanup(curlHandle);
-        if resultCode == Srl.Net.CurlCode.OK {
+        def resultCode: Int = Net.CurlEasy.perform(curlHandle);
+        if resultCode == Net.CurlCode.OK {
             def status: Int[64];
             Net.CurlEasy.getInfo(curlHandle, Net.CurlInfo.RESPONSE_CODE, status~ptr);
+            Net.CurlEasy.cleanup(curlHandle);
             if status >= 200 and status < 300 {
-                result = Srl.String(content.data, content.size);
+                result = String(content.data, content.size);
                 Memory.free(content.data);
                 return SrdRef[Error]();
             } else {
                 return HttpError.new(String("POST"), String(url), status);
             }
         }
-        if content.data != 0 Srl.Memory.free(content.data);
+        Net.CurlEasy.cleanup(curlHandle);
+        if content.data != 0 Memory.free(content.data);
         return HttpError.new(String("POST"), String(url), 0);
     }
 
     func makeGetRequest(url: CharsPtr, header: CharsPtr, result: ref[Json]): SrdRef[Error] {
-        def curlHandle: ptr[Srl.Net.Curl] = Srl.Net.CurlEasy.init();
+        def curlHandle: ptr[Net.Curl] = Net.CurlEasy.init();
+        if curlHandle == 0 {
+            System.fail(1, "Curl initialization failed!\n");
+        }
 
-        def content: Srl.Net.ResponseContent;
+        def content: Net.ResponseContent;
         content.data = 0;
         content.size = 0;
 
         if header != 0 {
-            def headers: ptr[Srl.Net.CurlSlist] = 0;
-            headers = Srl.Net.CurlSlist.append(headers, header);
-            Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.HTTPHEADER, headers);
+            def headers: ptr[Net.CurlSlist] = 0;
+            headers = Net.CurlSlist.append(headers, header);
+            Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.HTTPHEADER, headers);
         }
 
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.URL, url);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.SSL_VERIFYPEER, false);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.FOLLOWLOCATION, true);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.WRITEDATA, content~ptr);
-        Srl.Net.CurlEasy.setOpt(curlHandle, Srl.Net.CurlOpt.WRITEFUNCTION, Srl.Net.responseCallback~ptr);
-        def resultCode: Int = Srl.Net.CurlEasy.perform(curlHandle);
-        Srl.Net.CurlEasy.cleanup(curlHandle);
-        if resultCode == Srl.Net.CurlCode.OK {
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.URL, url);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.SSL_VERIFYPEER, false);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.FOLLOWLOCATION, true);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.WRITEDATA, content~ptr);
+        Net.CurlEasy.setOpt(curlHandle, Net.CurlOpt.WRITEFUNCTION, Net.responseCallback~ptr);
+        def resultCode: Int = Net.CurlEasy.perform(curlHandle);
+        if resultCode == Net.CurlCode.OK {
             def status: Int[64];
             Net.CurlEasy.getInfo(curlHandle, Net.CurlInfo.RESPONSE_CODE, status~ptr);
+            Net.CurlEasy.cleanup(curlHandle);
             if status >= 200 and status < 300 {
-                result = Srl.String(content.data, content.size);
+                result = String(content.data, content.size);
                 Memory.free(content.data);
                 return SrdRef[Error]();
             } else {
                 return HttpError.new(String("GET"), String(url), status);
             }
         }
-        if content.data != 0 Srl.Memory.free(content.data);
+        Net.CurlEasy.cleanup(curlHandle);
+        if content.data != 0 Memory.free(content.data);
         return HttpError.new(String("POST"), String(url), 0);
     }
 }
