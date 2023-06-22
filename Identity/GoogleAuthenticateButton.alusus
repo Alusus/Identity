@@ -14,7 +14,6 @@
                     "%s?client_id=%s&access_type=offline&&redirect_uri=%s&response_type=code&scope=openid+email+profile",
                     AUTH_URL, clientId.buf, redirectUri.buf
                 );
-                logToConsole(url);
                 setChild(Image().{
                     if dark url = String(BUTTON_DARK_IMAGE_URL)
                     else url = String(BUTTON_LIGHT_IMAGE_URL);

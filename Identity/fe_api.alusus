@@ -11,14 +11,12 @@
 
     function checkAuthenticationStatus(): SrdRef[Promise[Bool]] {
         def accessToken: String = Window.instance.localStorage.getItem(STORAGE_ACCESS_TOKEN_KEY);
-        logToConsole(String.format("accessToken = %s", accessToken.buf));
         if accessToken == "" {
             return Promise[Bool].new().{ resolve(false) };
         }
 
         def expiryStr: String = Window.instance.localStorage.getItem(STORAGE_ACCESS_TOKEN_EXPIRY_IN_SECONDS_KEY);
         if expiryStr == "" or String.parseInt(expiryStr) * 1000 > getTimestamp() {
-            logToConsole("accessToken not expired. Validating...");
             return sendRequest(
                 "POST",
                 "/api/identity/validate",
@@ -26,7 +24,6 @@
                 String.format("{ \"accessToken\": \"%s\" }", escapeJsonValue(accessToken).buf),
                 10000
             ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
-                logToConsole(String.format("validation complete: %s", res.getObject("eventData").getInt("status")));
                 if res.getObject("eventData").getInt("status") == 200 p.resolve(true)
                 else p.resolve(obtainNewAccessToken());
             });
@@ -38,10 +35,8 @@
     function finalizeAuthentication(redirectUri: CharsPtr): SrdRef[Promise[Bool]] {
         def code: String = Window.instance.getQueryParam("code");
         if code == "" {
-            logToConsole("code is empty!");
             return Promise[Bool].new().{ resolve(false) };
         }
-        logToConsole(String("code = ") + code);
         // TODO: Determine correct provider name. For now we're only supporting Google, so we can
         //       can hardcode it until other providers are supported.
         def providerName: String("google");
@@ -59,7 +54,6 @@
         ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
             if res.getObject("eventData").getInt("status") == 200 {
                 def body: Json = res.getObject("eventData").getString("body");
-                logToConsole(body.jsonString);
                 saveAuthenticationData(body);
                 p.resolve(true);
             } else {
@@ -70,7 +64,6 @@
     }
 
     function obtainNewAccessToken(): SrdRef[Promise[Bool]] {
-        logToConsole("Refreshing access token");
         def providerName: String = Window.instance.localStorage.getItem(STORAGE_PROVIDER_NAME_KEY);
         def refreshToken: String = Window.instance.localStorage.getItem(STORAGE_REFRESH_TOKEN_KEY);
         if providerName == "" or refreshToken == "" {
