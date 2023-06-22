@@ -14,7 +14,7 @@
         }
         handler (this: Error).getMessage(): String set_ptr {
             return String.format(
-                "HTTP request failed. Status Code: %d. Target: %s %s",
+                "HTTP request failed. Status Code: %i. Target: %s %s",
                 this.status,
                 this.method.buf,
                 this.url.buf
