@@ -1,6 +1,8 @@
 @merge module Identity {
     def ErrorCodes: {
         def HTTP_ERROR: 1;
+        def INVALID_PROVIDER: 2;
+        def INVALID_PARAM: 3;
     };
 
     class HttpError {
@@ -27,5 +29,19 @@
                 status = s;
             };
         }
+    }
+
+    func createInvalidProviderError(providerName: CharsPtr): SrdRef[GenericError] {
+        return SrdRef[GenericError].construct().{
+            code = ErrorCodes.INVALID_PROVIDER;
+            message = String.format("Invalid provider: %s", providerName);
+        };
+    }
+
+    func createInvalidParamError(paramName: CharsPtr): SrdRef[GenericError] {
+        return SrdRef[GenericError].construct().{
+            code = ErrorCodes.INVALID_PARAM;
+            message = String.format("Invalid param: %s", paramName);
+        };
     }
 }

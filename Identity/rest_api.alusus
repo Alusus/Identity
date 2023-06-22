@@ -14,6 +14,7 @@
         if onLogin.isNull() {
             Console.print("%sError: onLogin is not setup%s\n", Console.Style.FG_RED, Console.Style.FG_WHITE);
             Http.print(conn, "HTTP/1.1 500 Internal Server Error\r\n");
+            return;
         }
     }
 
@@ -84,13 +85,23 @@
             Http.print(conn, "Content-Length: %d\r\n\r\n", response.getLength());
             Http.print(conn, response.buf);
         } else {
-            Console.print(
-                "%sAuthentication failed: %s%s\n",
-                Console.Style.FG_RED,
-                result.error.getMessage().buf,
-                Console.Style.FG_WHITE
-            );
-            Http.print(conn, "HTTP/1.1 401 Unauthorized\r\n\r\n");
+            def code: Int = result.error.getCode();
+            if code == ErrorCodes.INVALID_PARAM or code == ErrorCodes.INVALID_PROVIDER {
+                def response: String = result.error.getMessage();
+                Http.print(conn, "HTTP/1.1 400 Bad Request\r\n\r\n");
+                Http.print(conn, "Cache-Control: no-cache\r\n");
+                Http.print(conn, "Content-Type: text/plain\r\n");
+                Http.print(conn, "Content-Length: %d\r\n\r\n", response.getLength());
+                Http.print(conn, response.buf);
+            } else {
+                Console.print(
+                    "%sAuthentication failed: %s%s\n",
+                    Console.Style.FG_YELLOW,
+                    result.error.getMessage().buf,
+                    Console.Style.FG_WHITE
+                );
+                Http.print(conn, "HTTP/1.1 401 Unauthorized\r\n\r\n");
+            }
         }
     }
 

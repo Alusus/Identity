@@ -1,35 +1,40 @@
 @merge module Identity {
     def providers: Array[SrdRef[Provider]];
 
-    function findProvider(name: String): SrdRef[Provider] {
+    function findProvider(name: String): ref[Provider] {
         def i: Int;
         for i = 0, i < providers.getLength(), ++i {
-            if providers(i).name == name return providers(i);
+            if providers(i).name == name return providers(i).obj;
         }
-        return SrdRef[Provider]();
+        return nullRef[Provider];
+    }
+
+    macro validateParam[param, ReturnType] {
+        if param == "" return Possible[ReturnType].failure(createInvalidParamError("{{param}}"));
     }
 
     function authenticate(providerName: String, code: String, redirectUri: String): Possible[AuthenticationResponse] {
-        def provider: SrdRef[Provider] = findProvider(providerName);
-        if provider.isNull() return Possible[AuthenticationResponse].failure(
-            SrdRef[GenericError].construct().{ code = 1; message = "Invalid provider" }
-        );
+        validateParam[providerName, AuthenticationResponse];
+        validateParam[code, AuthenticationResponse];
+        validateParam[redirectUri, AuthenticationResponse];
+        def provider: ref[Provider](findProvider(providerName));
+        if provider~ptr == 0 return Possible[AuthenticationResponse].failure(createInvalidProviderError(providerName));
         return provider.authenticate(code, redirectUri);
     }
 
     function reauthenticate(providerName: String, refreshToken: String): Possible[AuthenticationResponse] {
-        def provider: SrdRef[Provider] = findProvider(providerName);
-        if provider.isNull() return Possible[AuthenticationResponse].failure(
-            SrdRef[GenericError].construct().{ code = 1; message = "Invalid provider" }
-        );
+        validateParam[providerName, AuthenticationResponse];
+        validateParam[refreshToken, AuthenticationResponse];
+        def provider: ref[Provider](findProvider(providerName));
+        if provider~ptr == 0 return Possible[AuthenticationResponse].failure(createInvalidProviderError(providerName));
         return provider.reauthenticate(refreshToken);
     }
 
     function getUserInfo(providerName: String, accessToken: String): Possible[UserInfoResponse] {
-        def provider: SrdRef[Provider] = findProvider(providerName);
-        if provider.isNull() return Possible[UserInfoResponse].failure(
-            SrdRef[GenericError].construct().{ code = 1; message = "Invalid provider" }
-        );
+        validateParam[providerName, UserInfoResponse];
+        validateParam[accessToken, UserInfoResponse];
+        def provider: ref[Provider](findProvider(providerName));
+        if provider~ptr == 0 return Possible[UserInfoResponse].failure(createInvalidProviderError(providerName));
         return provider.getUserInfo(accessToken);
     }
 }

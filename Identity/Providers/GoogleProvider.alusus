@@ -26,8 +26,7 @@
         // ABSTRACT METHODS
 
         handler (this: Provider).name: String set_ptr {
-            @shared def name: String("google");
-            return name;
+            return String("google");
         }
 
         handler (this: Provider).authenticate(
@@ -73,10 +72,13 @@
 
         // REST WRAPPERS
 
-        func validateCode(code: String, clientId: String, clientSecret: String, redirectUri: String): Possible[TokenInfo] {
+        func validateCode(
+            code: CharsPtr, clientId: CharsPtr, clientSecret: CharsPtr, redirectUri: CharsPtr
+        ): Possible[TokenInfo] {
             def form: String = String.format(
-                "code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&grant_type=authorization_code&access_type=offline",
-                code.buf, clientId.buf, clientSecret.buf, redirectUri.buf
+                "code=%s&client_id=%s&client_secret=%s&redirect_uri=%s&"
+                "grant_type=authorization_code&access_type=offline",
+                code, clientId, clientSecret, redirectUri
             );
             def currentTimestamp: Int[64] = Time.getTimestamp(0);
             def json: Json;
@@ -92,10 +94,12 @@
             }
         }
 
-        func obtainAccessToken(refreshToken: String, clientId: String, clientSecret: String): Possible[TokenInfo] {
+        func obtainAccessToken(
+            refreshToken: CharsPtr, clientId: CharsPtr, clientSecret: CharsPtr
+        ): Possible[TokenInfo] {
             def form: String = String.format(
                 "client_id=%s&client_secret=%s&refresh_token=%s&grant_type=refresh_token",
-                clientId.buf, clientSecret.buf, refreshToken.buf
+                clientId, clientSecret, refreshToken
             );
             def currentTimestamp: Int[64] = Time.getTimestamp(0);
             def json: Json;
@@ -111,8 +115,8 @@
             }
         }
 
-        func fetchUserInfo(accessToken: String): Possible[UserInfo] {
-            def header: String = String.format("Authorization: Bearer %s", accessToken.buf);
+        func fetchUserInfo(accessToken: CharsPtr): Possible[UserInfo] {
+            def header: String = String.format("Authorization: Bearer %s", accessToken);
             def json: Json;
             def err: SrdRef[Error] = makeGetRequest(USER_INFO_URL, header, json);
             if err.isNull() {
