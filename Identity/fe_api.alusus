@@ -24,8 +24,8 @@
                 String.format("{ \"accessToken\": \"%s\" }", escapeJsonValue(accessToken).buf),
                 10000
             ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
-                if res.getObject("eventData").getInt("status") == 200 p.resolve(true)
-                else p.resolve(obtainNewAccessToken());
+                if res.getObject("eventData").getInt("status") == 401 p.resolve(obtainNewAccessToken())
+                else p.resolve(true);
             });
         }
 
