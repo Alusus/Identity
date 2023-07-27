@@ -1,8 +1,8 @@
 @merge module Identity {
     def ErrorCodes: {
-        def HTTP_ERROR: 1;
-        def INVALID_PROVIDER: 2;
-        def INVALID_PARAM: 3;
+        def HTTP_ERROR: "identity_http_error";
+        def INVALID_PROVIDER: "identity_invalid_provider";
+        def INVALID_PARAM: "identity_invalid_param";
     };
 
     class HttpError {
@@ -11,8 +11,8 @@
         def method: String;
         def status: Int;
 
-        handler (this: Error).getCode(): Int set_ptr {
-            return ErrorCodes.HTTP_ERROR;
+        handler (this: Error).getCode(): String set_ptr {
+            return String(ErrorCodes.HTTP_ERROR);
         }
         handler (this: Error).getMessage(): String set_ptr {
             return String.format(
@@ -32,16 +32,16 @@
     }
 
     func createInvalidProviderError(providerName: CharsPtr): SrdRef[GenericError] {
-        return SrdRef[GenericError].construct().{
-            code = ErrorCodes.INVALID_PROVIDER;
-            message = String.format("Invalid provider: %s", providerName);
-        };
+        return GenericError.new(
+            String(ErrorCodes.INVALID_PROVIDER),
+            String.format("Invalid provider: %s", providerName)
+        );
     }
 
     func createInvalidParamError(paramName: CharsPtr): SrdRef[GenericError] {
-        return SrdRef[GenericError].construct().{
-            code = ErrorCodes.INVALID_PARAM;
-            message = String.format("Invalid param: %s", paramName);
-        };
+        return GenericError.new(
+            String(ErrorCodes.INVALID_PARAM),
+            String.format("Invalid param: %s", paramName)
+        );
     }
 }

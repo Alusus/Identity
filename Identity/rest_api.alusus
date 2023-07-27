@@ -85,7 +85,7 @@
             Http.print(conn, "Content-Length: %d\r\n\r\n", response.getLength());
             Http.print(conn, response.buf);
         } else {
-            def code: Int = result.error.getCode();
+            def code: String = result.error.getCode();
             if code == ErrorCodes.INVALID_PARAM or code == ErrorCodes.INVALID_PROVIDER {
                 def response: String = result.error.getMessage();
                 Http.print(conn, "HTTP/1.1 400 Bad Request\r\n\r\n");
