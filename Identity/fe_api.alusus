@@ -24,7 +24,7 @@
                 String.format("{ \"accessToken\": \"%s\" }", escapeJsonValue(accessToken).buf),
                 10000
             ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
-                if res.getObject("eventData").getInt("status") == 401 p.resolve(obtainNewAccessToken())
+                if res("eventData")("status")~cast[Int] == 401 p.resolve(obtainNewAccessToken())
                 else p.resolve(true);
             });
         }
@@ -52,8 +52,8 @@
             ),
             10000
         ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
-            if res.getObject("eventData").getInt("status") == 200 {
-                def body: Json = res.getObject("eventData").getString("body");
+            if res("eventData")("status")~cast[Int] == 200 {
+                def body: Json = res("eventData")("body")~cast[String];
                 saveAuthenticationData(body);
                 p.resolve(true);
             } else {
@@ -81,8 +81,8 @@
             ),
             10000
         ).then[Bool](closure (res: Json, p: ref[Promise[Bool]]) {
-            if res.getObject("eventData").getInt("status") == 200 {
-                def body: Json = res.getObject("eventData").getString("body");
+            if res("eventData")("status")~cast[Int] == 200 {
+                def body: Json = res("eventData")("body")~cast[String];
                 saveAuthenticationData(body);
                 p.resolve(true);
             } else {
@@ -94,11 +94,11 @@
 
     function saveAuthenticationData(json: Json) {
         Window.instance.localStorage.{
-            setItem(STORAGE_PROVIDER_NAME_KEY, json.getString("providerName"));
-            setItem(STORAGE_ACCESS_TOKEN_KEY, json.getString("accessToken"));
-            setItem(STORAGE_ACCESS_TOKEN_EXPIRY_IN_SECONDS_KEY, String() + json.getInt("accessTokenExpiry"));
-            setItem(STORAGE_REFRESH_TOKEN_KEY, json.getString("refreshToken"));
-            setItem(STORAGE_USER_FULL_NAME_KEY, json.getString("fullName"));
+            setItem(STORAGE_PROVIDER_NAME_KEY, json("providerName"));
+            setItem(STORAGE_ACCESS_TOKEN_KEY, json("accessToken"));
+            setItem(STORAGE_ACCESS_TOKEN_EXPIRY_IN_SECONDS_KEY, String() + json("accessTokenExpiry")~cast[Int]);
+            setItem(STORAGE_REFRESH_TOKEN_KEY, json("refreshToken"));
+            setItem(STORAGE_USER_FULL_NAME_KEY, json("fullName"));
         };
     }
 

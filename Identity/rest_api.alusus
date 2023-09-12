@@ -25,7 +25,7 @@
         def postDataSize: Int = Http.read(conn, postData~ptr, postData~size);
         def json: Json(String(postData~ptr, postDataSize));
         handleAuthenticationResponse(
-            conn, authenticate(json.getString("providerName"), json.getString("code"), json.getString("redirectUri"))
+            conn, authenticate(json("providerName"), json("code"), json("redirectUri"))
         );
     }
 
@@ -36,7 +36,7 @@
         def postDataSize: Int = Http.read(conn, postData~ptr, postData~size);
         def json: Json(String(postData~ptr, postDataSize));
         handleAuthenticationResponse(
-            conn, reauthenticate(json.getString("providerName"), json.getString("refreshToken"))
+            conn, reauthenticate(json("providerName"), json("refreshToken"))
         );
     }
 
@@ -49,7 +49,7 @@
         def providerName: String;
         def extAccessToken: String;
         def userId: String;
-        if not validateAccessToken(json.getString("accessToken"), providerName, extAccessToken, userId) {
+        if not validateAccessToken(json("accessToken"), providerName, extAccessToken, userId) {
             Http.print(conn, "HTTP/1.1 401 Unauthorized\r\n\r\n");
         }
         def userInfo: Possible[UserInfoResponse] = getUserInfo(providerName, extAccessToken);

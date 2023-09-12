@@ -85,9 +85,9 @@
             def err: SrdRef[Error] = makePostRequest(TOKEN_URL, form, json);
             if err.isNull() {
                 return Possible[TokenInfo].success(TokenInfo(
-                    json.getString("access_token"),
-                    currentTimestamp + json.getInt("expires_in"),
-                    json.getString("refresh_token")
+                    json("access_token"),
+                    currentTimestamp + json("expires_in")~cast[Int[64]],
+                    json("refresh_token")
                 ));
             } else {
                 return Possible[TokenInfo].failure(err);
@@ -106,9 +106,9 @@
             def err: SrdRef[Error] = makePostRequest(TOKEN_URL, form, json);
             if err.isNull() {
                 return Possible[TokenInfo].success(TokenInfo(
-                    json.getString("access_token"),
-                    currentTimestamp + json.getInt("expires_in"),
-                    json.getString("refresh_token")
+                    json("access_token"),
+                    currentTimestamp + json("expires_in")~cast[Int[64]],
+                    json("refresh_token")
                 ));
             } else {
                 return Possible[TokenInfo].failure(err);
@@ -120,11 +120,7 @@
             def json: Json;
             def err: SrdRef[Error] = makeGetRequest(USER_INFO_URL, header, json);
             if err.isNull() {
-                return Possible[UserInfo].success(UserInfo(
-                    json.getString("sub"),
-                    json.getString("name"),
-                    json.getString("email")
-                ));
+                return Possible[UserInfo].success(UserInfo(json("sub"), json("name"), json("email")));
             } else {
                 return Possible[UserInfo].failure(err);
             }
