@@ -25,6 +25,16 @@ import "Identity/fe_api";
     use WebPlatform;
     use Promises;
 
+    function setup(
+        providers: Array[SrdRef[Provider]],
+        pkeyFilename: CharsPtr,
+        loginCallback: closure(AuthenticationResponse): String
+    ) {
+        Identity.providers = providers;
+        privateKey~no_deref = Crypto.EvpPkey.readPem(pkeyFilename);
+        onLogin = loginCallback;
+    }
+
     function addProvider(provider: SrdRef[Provider]) {
         providers.add(provider);
     }

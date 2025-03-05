@@ -2,14 +2,6 @@
     def privateKey: ref[Crypto.EvpPkey];
     def onLogin: closure (respones: AuthenticationResponse): String;
 
-    function setupRestApi(pkeyFilename: CharsPtr, loginCallback: closure(AuthenticationResponse): String) {
-        preprocess {
-            registerEndpointsModule[Identity];
-        }
-        privateKey~no_deref = Crypto.EvpPkey.readPem(pkeyFilename);
-        onLogin = loginCallback;
-    }
-
     macro validateSetup [conn] {
         if onLogin.isNull() {
             Console.print("%sError: onLogin is not setup%s\n", Console.Style.FG_RED, Console.Style.FG_WHITE);

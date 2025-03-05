@@ -16,6 +16,13 @@ import "Apm";
 Apm.importFile("Alusus/Identity");
 ```
 
+* Add module `Identity` to the modules that WebPlatform will look for endpoints in:
+
+```
+def serverModules: { MyServer, Identity };
+buildAndRunServer[serverModules](options);
+```
+
 * Create an application definition in the Google service by visiting the website https://console.cloud.google.com/apis/,
   then add an OAuth 2.0 identifier for this application through the Credentials option in the menu. Copy the values of
   clientId and clientSecret from there.
@@ -26,23 +33,21 @@ Apm.importFile("Alusus/Identity");
 * Create an RSA key to be used for authenticating authentication identities and store it in a file within your project.
   The key should be based on RSA 256 encoding.
 
-* Setup the REST interface of the library by calling `setupRestApi` and providing it with the name of the RSA key file,
+* Setup the  library by calling `setup` and providing it with the list of providers, the name of the RSA key file,
   along with a closure that is invoked when logging in to create a user account and return its unique identifier.
 
 ```
-Identity.setupRestApi("rsakey", closure (res: Identity.AuthenticationResponse): String {
-    // Use user info from res to lookup the user record in the project's DB, or to create a new
-    // record if this is a new user. This closure should return the user's unique id.
-    return userId;
-}
-```
-
-* Add Google provider to the library's list of providers:
-
-```
-def clientId: "<the value of clientId from Google's dashboard>";
+def clientId: "<the value of clientId from Google's dashbaord>";
 def clientSecret: "<the value of clientSecret from Google's dashboard>";
-Identity.addProvider(Identity.GoogleProvider(String(clientId), String(clientSecret)));
+Identity.setup(
+    Array[SrdRef[Identity.Provider]]({ Identity.GoogleProvider(String(clientId), String(clientSecret)) }),
+    "rsakey",
+    closure (res: Identity.AuthenticationResponse): String {
+        // Use user info from res to lookup the user record in the project's DB, or to create a new
+        // record if this is a new user. This closure should return the user's unique id.
+        return userId;
+    }
+);
 ```
 
 * Add a Google login button to your website:
@@ -154,7 +159,7 @@ This function returns a boolean value, `true` (1), if the access token is valid,
   Currently, the library only supports Google as the provider, so the value of this variable will be `google`.
 * `extAccessToken`: If the token is valid, this variable is set to the external access token (associated with a service
   like Google). The external access token can be used to communicate with the external service (e.g., the Google API).
-* `userId`: The unique identifier of the user, which is returned by the closure passed to the `setupRestApi` function.
+* `userId`: The unique identifier of the user, which is returned by the closure passed to the `setup` function.
 
 ### TokenInfo
 
