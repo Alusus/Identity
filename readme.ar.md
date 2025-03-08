@@ -27,6 +27,22 @@ Apm.importFile("Alusus/Identity");
 
 </div>
 
+* أضف الوحدة `هـوية` (`Identity`) إلى وحدات الخادم التي تبحث فيها مـنصة_ويب عن منافذ الخادم:
+
+<div dir=rtl>
+
+```
+عرف وحدات_الخادم: { خـادمي، هـوية }؛
+ابن_وشغل_الخادم[وحدات_الخادم](خيارات)؛
+```
+
+</div>
+
+```
+def serverModules: { MyServer, Identity };
+buildAndRunServer[serverModules](options);
+```
+
 * انشئ تعريفا لتطبيقك في خدمة جوجل من خلال زيارة الموقع https://console.cloud.google.com/apis/ ثم
   اضف معرف OAuth 2.0 هذا التطبيق عبر خيار Credentials في القائمة. انسخ قيمتي clientId و clientSecret منها.
 
@@ -34,35 +50,21 @@ Apm.importFile("Alusus/Identity");
 
 * أنشئ مفتاح RSA لاستخدامه في توثيق معرفات المصادقة وخزنه في ملف ضمن مشروعك. يجب أن يعتمد المفتاح ترميز RSA 256.
 
-* هيئ واجهة REST للمكتبة باستدعاء دالة `هيئ_واجهة_رست` واعطائها اسم ملف مفتاح RSA الخاص بالإضافة إلى مغلفة تستدعى
+* هيئ المكتبة باستدعاء دالة `اضبط` وإعطائها قائمة المزودين واسم ملف مفتاح RSA بالإضافة إلى مغلفة تستدعى
   عند تسجيل الدخول لإنشاء حساب للمستخدم وإرجاع معرفه الخاص.
-
-```
-هـوية.هيئ_واجهة_رست("rsakey"، مغلفة (جواب: هـوية.جـواب_مصادقة): نـص {
-    // استخدم بيانات المستخدم المضمنة في `جواب` لإيجاد حساب المستخدم في قاعدة بيانات المشروع، أو إنشاء قيد
-    // جديد له إن كان المستخدم جديدًا. هذه المغلفة يجب أن ترجع معرفًا فريدًا للمستخدم.
-    أرجع معرف_المستخدم؛
-})؛
-```
-
-<div dir=ltr>
-
-```
-Identity.setupRestApi("rsakey", closure (res: Identity.AuthenticationResponse): String {
-    // Use user info from res to lookup the user record in the project's DB, or to create a new
-    // record if this is a new user. This closure should return the user's unique id.
-    return userId;
-}
-```
-
-</div>
-
-* أضف مزود جوجل لقائمة مزودي المكتبة:
 
 ```
 عرف معرف_تطبيق_جوجل: "<قيمة clientId المأخوذة من خدمة مصادقة جوجل>"؛
 عرف كلمة_سر_جوجل: "<قيمة clientSecret المأخوذة من خدمة مصادقة جوجل>"؛
-هـوية.أضف_مزودا(هـوية.مـزود_جوجل(نـص(معرف_تطبيق_جوجل)، نـص(كلمة_سر_جوجل)))؛
+هـوية.اضبط(
+    مـصفوفة[سـندنا[هـوية.مـزود]]({ هـوية.مـزود_جوجل(نـص(معرف_تطبيق_جوجل)، نـص(كلمة_سر_جوجل)) })
+    "مفتاح_آر_إس_أي"،
+    مغلفة (جواب: هـوية.جـواب_مصادقة): نـص {
+        // استخدم بيانات المستخدم المضمنة في `جواب` لإيجاد حساب المستخدم في قاعدة بيانات المشروع، أو إنشاء قيد
+        // جديد له إن كان المستخدم جديدًا. هذه المغلفة يجب أن ترجع معرفًا فريدًا للمستخدم.
+        أرجع معرف_المستخدم؛
+    }
+)؛
 ```
 
 <div dir=ltr>
@@ -70,7 +72,15 @@ Identity.setupRestApi("rsakey", closure (res: Identity.AuthenticationResponse): 
 ```
 def clientId: "<the value of clientId from Google's dashbaord>";
 def clientSecret: "<the value of clientSecret from Google's dashboard>";
-Identity.addProvider(Identity.GoogleProvider(String(clientId), String(clientSecret)));
+Identity.setup(
+    Array[SrdRef[Identity.Provider]]({ Identity.GoogleProvider(String(clientId), String(clientSecret)) }),
+    "rsakey",
+    closure (res: Identity.AuthenticationResponse): String {
+        // Use user info from res to lookup the user record in the project's DB, or to create a new
+        // record if this is a new user. This closure should return the user's unique id.
+        return userId;
+    }
+);
 ```
 
 </div>
@@ -274,7 +284,7 @@ function validateAccessToken(
   الخارجي (التابع لخدمة جوجل على سبيل المثال). يمكن استخدام رمز الولوج الخارجي في التواصل مع الخدمة
   الخارجية (أي، مع واجهة جوجل البرمجية).
 * `معرف_المستخدم` (`userId`): المعرف الفريد للمستخدم، والذي ترجعه المغلفة الممررة لدالة
-  `هيئ_واجهة_رست` (`setupRestApi`).
+  `اضبط` (`setup`).
 
 ### بـيانات_توكن (TokenInfo)
 
