@@ -1,5 +1,5 @@
 # Identity
-[[English]](readme.md)
+[[English]](README.md)
 
 <div dir=rtl>
 
@@ -380,6 +380,14 @@ class UserInfoResponse {
 ```
 
 </div>
+
+---
+
+## الرخصة
+
+حقوق النشر © 2026 سرمد خالد عبد الله
+
+هذا المشروع مرخص بموجب رخصة غنو العمومية الصغرى الإصدار 3.0 (LGPL-3.0). راجع ملفات `COPYING` و `COPYING.LESSER` للحصول على التفاصيل.
 
 </div>
 

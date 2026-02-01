@@ -1,5 +1,5 @@
 # Identity
-[[عربي]](readme.ar.md)
+[[عربي]](README.ar.md)
 
 A library for integrating WebPlatform applications with public authentication services, such as Google authentication
 service, which allows users to log in using their Gmail accounts. It is designed to support multiple authentication
@@ -204,4 +204,12 @@ class UserInfoResponse {
 }
 
 ```
+
+---
+
+## License
+
+Copyright (C) 2026 Sarmad Abdullah
+
+This project is licensed under the GNU Lesser General Public License v3.0 (LGPL-3.0). See the `COPYING` and `COPYING.LESSER` files for details.
 
