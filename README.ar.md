@@ -15,14 +15,14 @@
 
 ```
 اشمل "مـحا"؛
-مـحا.اشمل_ملف("Alusus/Identity"، "هـوية.أسس")؛
+مـحا.اشمل_حزمة("Alusus/Identity@0.3"، "هـوية.أسس")؛
 ```
 
 <div dir=ltr>
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Identity");
+Apm.importPackage("Alusus/Identity@0.3");
 ```
 
 </div>

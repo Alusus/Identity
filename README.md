@@ -13,7 +13,7 @@ These steps assume that you already have a WebPlatform project and you want to a
 
 ```
 import "Apm";
-Apm.importFile("Alusus/Identity");
+Apm.importPackage("Alusus/Identity@0.3");
 ```
 
 * Add module `Identity` to the modules that WebPlatform will look for endpoints in:

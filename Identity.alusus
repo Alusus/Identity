@@ -23,9 +23,9 @@ import "Srl/Possible";
 import "Srl/Net";
 import "Srl/errors";
 import "Apm";
-Apm.importFile("Alusus/Crypto");
-Apm.importFile("Alusus/Json");
-Apm.importFile("Alusus/Promises");
+Apm.importPackage("Alusus/Crypto@0.1");
+Apm.importPackage("Alusus/Json@0.2");
+Apm.importPackage("Alusus/Promises@0.1");
 
 import "Identity/errors";
 import "Identity/Providers/Provider";
