@@ -1,4 +1,4 @@
-# Identity
+# هـوية (Identity)
 [[English]](README.md)
 
 <div dir=rtl>
