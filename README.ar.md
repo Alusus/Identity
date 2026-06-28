@@ -29,19 +29,19 @@ Apm.importPackage("Alusus/Identity@0.3");
 
 * أضف الوحدة `هـوية` (`Identity`) إلى وحدات الخادم التي تبحث فيها مـنصة_ويب عن منافذ الخادم:
 
-<div dir=rtl>
-
 ```
 عرف وحدات_الخادم: { خـادمي، هـوية }؛
 ابن_وشغل_الخادم[وحدات_الخادم](خيارات)؛
 ```
 
-</div>
+<div dir=ltr>
 
 ```
 def serverModules: { MyServer, Identity };
 buildAndRunServer[serverModules](options);
 ```
+
+</div>
 
 * انشئ تعريفا لتطبيقك في خدمة جوجل من خلال زيارة الموقع https://console.cloud.google.com/apis/ ثم
   اضف معرف OAuth 2.0 هذا التطبيق عبر خيار Credentials في القائمة. انسخ قيمتي clientId و clientSecret منها.
